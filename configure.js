@@ -1,7 +1,4 @@
 'use strict'
-const { exec } = require('child_process')
-
-global.exec = exec
 
 const cloudConfigureCommand = {
   command: 'cloud:configure',
@@ -10,29 +7,45 @@ const cloudConfigureCommand = {
   callback: callbackFunction
 }
 
-function callbackFunction (args, credentials) {
+function callbackFunction (args, credentials, command, parameters) {
   const environment = args[3] || 'dev'
   const provider = credentials.environments[environment].provider
   const configuration = credentials.environments[environment].configuration
   this.environment = environment
   this.exec = global.exec
-  const process = cloudConfigureCommand.exec('yarn sls config credentials --provider ' + provider + ' --key ' + configuration.accessKeyId + ' --secret ' + configuration.secretAccessKey + ' -o')
+  let commandString = ''
+  switch (provider) {
+    case 'aws':
+      commandString = 'yarn sls config credentials --provider ' + provider + ' --key ' + configuration.accessKeyId + ' --secret ' + configuration.secretAccessKey + ' -o'
+      break
+    case 'azure':
+      switch (command.parameters.shell) {
+        case 'powershell':
+          commandString =
+            "[System.Environment]::SetEnvironmentVariable('azureSubId', '" + configuration.subscriptionId + "', [System.EnvironmentVariableTarget]::User);" +
+            "[System.Environment]::SetEnvironmentVariable('azureServicePrincipalTenantId', '" + configuration.tenantId + "', [System.EnvironmentVariableTarget]::User);" +
+            "[System.Environment]::SetEnvironmentVariable('azureServicePrincipalClientId', '" + configuration.clientId + "', [System.EnvironmentVariableTarget]::User);" +
+            "[System.Environment]::SetEnvironmentVariable('azureServicePrincipalPassword', '" + configuration.password + "', [System.EnvironmentVariableTarget]::User)"
+          break
+        case 'bash':
+        default:
+          commandString = 'export azureSubId=\'' +
+            configuration.subscriptionId +
+            '\';export azureServicePrincipalTenantId=\'' + configuration.tenantId +
+            '\';export azureServicePrincipalClientId=\'' + configuration.clientId +
+            '\';export azureServicePrincipalPassword=\'' + configuration.password + '\''
+          break
+      }
+      break
+    default:
+      throw new Error('Provider not specified in credentials.json')
+  }
 
-  process.stderr.on('data', function (data) {
-    console.log(data)
-  })
-
-  process.stdout.on('data', function (data) {
-    console.log(data)
-  })
-
-  process.on('exit', function (code, signal) {
-    if (code === 0) {
-      console.log('Set deploy configuration to ' + provider + ' for the ' + environment + ' environment.')
-    } else {
-      console.log('Command exited with non-zero exit code')
-    }
-  })
+  command.executeCommand(
+    commandString,
+    'Set deploy configuration to ' + provider + ' for the ' + environment + ' environment. You may need to restart your terminal/IDE for the configuration to take effect.',
+    'Setting cloud configuration failed'
+  )
 }
 
 module.exports = cloudConfigureCommand
