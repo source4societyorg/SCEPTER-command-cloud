@@ -2,15 +2,31 @@
 
 const cloudConfigureCommand = {
   command: 'cloud:configure',
-  usage: 'cloud:configure [<env>]',
-  description: 'Sets the default cloud service provider configuration to use via serverless',
+  usage: 'cloud:configure <env> <provider>',
+  description: 'Sets the default environment provider to use via serverless',
   callback: callbackFunction
 }
 
 function callbackFunction (args, credentials, command, parameters) {
-  const environment = args[3] || 'dev'
-  const provider = credentials.environments[environment].provider
-  const configuration = credentials.environments[environment].configuration
+  const environment = args[3]
+  const provider = args[4]
+
+  if (typeof environment === 'undefined' || typeof provider === 'undefined') {
+    command.printMessage('Usage: ' + this.usage)
+    return
+  }
+
+  if (typeof credentials.environments[environment] === 'undefined') {
+    command.printMessage('The specified environment configuration does not exist')
+    return
+  }
+
+  if (typeof credentials.environments[environment].provider[provider] === 'undefined') {
+    command.printMessage('The specified provider configuration does not exist')
+    return
+  }
+
+  const configuration = credentials.environments[environment].provider[provider]
   this.environment = environment
   this.exec = global.exec
   let commandString = ''
@@ -37,8 +53,6 @@ function callbackFunction (args, credentials, command, parameters) {
           break
       }
       break
-    default:
-      throw new Error('Provider not specified in credentials.json')
   }
 
   command.executeCommand(

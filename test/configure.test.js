@@ -1,41 +1,41 @@
 
 const cloudConfigureCommand = require('../configure.js')
 let mockCommand = {}
+const mockPrintMessage = () => 'test'
 test('cloudConfigureCommand calls exec with credentials and handles all possible exit codes for aws provider', (done) => {
-  const mockCredentials = { environments: { test: { provider: 'aws', configuration: { accessKeyId: 'test', secretAccessKey: 'notasecret' } } } }
-
+  const mockCredentials = { environments: { test: { provider: { aws: { accessKeyId: 'test', secretAccessKey: 'notasecret' } } } } }
   const mockExecuteCommand = (commandString, successMessage, errorMessage) => {
-    expect(commandString).toEqual('yarn sls config credentials --provider ' + mockCredentials.environments['test'].provider + ' --key ' + mockCredentials.environments['test'].configuration.accessKeyId + ' --secret ' + mockCredentials.environments['test'].configuration.secretAccessKey + ' -o')
+    expect(commandString).toEqual('yarn sls config credentials --provider aws --key ' + mockCredentials.environments['test'].provider['aws'].accessKeyId + ' --secret ' + mockCredentials.environments['test'].provider['aws'].secretAccessKey + ' -o')
     expect(successMessage.length).toBeGreaterThan(0)
     expect(errorMessage.length).toBeGreaterThan(0)
     done()
   }
 
   mockCommand = {
-    executeCommand: mockExecuteCommand
+    executeCommand: mockExecuteCommand,
+    printMessage: mockPrintMessage
   }
 
-  cloudConfigureCommand.callback(['node', 'scriptname', 'something', 'test'], mockCredentials, mockCommand)
+  cloudConfigureCommand.callback([undefined, undefined, undefined, 'test', 'aws'], mockCredentials, mockCommand)
 })
 
 test('cloudConfigureCommand calls exec with credentials and handles all possible exit codes for azure provider on powershell', (done) => {
-  const mockCredentials = { environments: { test: { provider: 'azure',
-    configuration: {
-      subscriptionId: 'subscriptionIdString',
-      appId: 'appIdString',
-      displayName: 'displayNameString',
-      tenantId: 'tenantIdString',
-      clientId: 'clientIdString',
-      password: 'passwordString'
-    }
-  } } }
+  const mockCredentials = { environments: { test: { provider: { azure: {
+    subscriptionId: 'subscriptionIdString',
+    appId: 'appIdString',
+    displayName: 'displayNameString',
+    tenantId: 'tenantIdString',
+    clientId: 'clientIdString',
+    password: 'passwordString'
+  }
+  } } } }
 
   const mockExecuteCommand = (commandString, successMessage, errorMessage) => {
     expect(commandString).toEqual(
-      "[System.Environment]::SetEnvironmentVariable('azureSubId', '" + mockCredentials.environments.test.configuration.subscriptionId + "', [System.EnvironmentVariableTarget]::User);" +
-      "[System.Environment]::SetEnvironmentVariable('azureServicePrincipalTenantId', '" + mockCredentials.environments.test.configuration.tenantId + "', [System.EnvironmentVariableTarget]::User);" +
-      "[System.Environment]::SetEnvironmentVariable('azureServicePrincipalClientId', '" + mockCredentials.environments.test.configuration.clientId + "', [System.EnvironmentVariableTarget]::User);" +
-      "[System.Environment]::SetEnvironmentVariable('azureServicePrincipalPassword', '" + mockCredentials.environments.test.configuration.password + "', [System.EnvironmentVariableTarget]::User)"
+      "[System.Environment]::SetEnvironmentVariable('azureSubId', '" + mockCredentials.environments.test.provider['azure'].subscriptionId + "', [System.EnvironmentVariableTarget]::User);" +
+      "[System.Environment]::SetEnvironmentVariable('azureServicePrincipalTenantId', '" + mockCredentials.environments.test.provider['azure'].tenantId + "', [System.EnvironmentVariableTarget]::User);" +
+      "[System.Environment]::SetEnvironmentVariable('azureServicePrincipalClientId', '" + mockCredentials.environments.test.provider['azure'].clientId + "', [System.EnvironmentVariableTarget]::User);" +
+      "[System.Environment]::SetEnvironmentVariable('azureServicePrincipalPassword', '" + mockCredentials.environments.test.provider['azure'].password + "', [System.EnvironmentVariableTarget]::User)"
     )
     expect(successMessage.length).toBeGreaterThan(0)
     expect(errorMessage.length).toBeGreaterThan(0)
@@ -44,31 +44,31 @@ test('cloudConfigureCommand calls exec with credentials and handles all possible
 
   mockCommand = {
     executeCommand: mockExecuteCommand,
-    parameters: { shell: 'powershell' }
+    parameters: { shell: 'powershell' },
+    printMessage: mockPrintMessage
   }
 
-  cloudConfigureCommand.callback(['node', 'scriptname', 'something', 'test'], mockCredentials, mockCommand)
+  cloudConfigureCommand.callback([undefined, undefined, undefined, 'test', 'azure'], mockCredentials, mockCommand)
 })
 
 test('cloudConfigureCommand calls exec with credentials and handles all possible exit codes for azure provider on bash', (done) => {
-  const mockCredentials = { environments: { test: { provider: 'azure',
-    configuration: {
-      subscriptionId: 'subscriptionIdString',
-      appId: 'appIdString',
-      displayName: 'displayNameString',
-      tenantId: 'tenantIdString',
-      clientId: 'clientIdString',
-      password: 'passwordString'
-    }
-  } } }
+  const mockCredentials = { environments: { test: { provider: { azure: {
+    subscriptionId: 'subscriptionIdString',
+    appId: 'appIdString',
+    displayName: 'displayNameString',
+    tenantId: 'tenantIdString',
+    clientId: 'clientIdString',
+    password: 'passwordString'
+  }
+  } } } }
 
   const mockExecuteCommand = (commandString, successMessage, errorMessage) => {
     expect(commandString).toEqual(
       'export azureSubId=\'' +
-      mockCredentials.environments.test.configuration.subscriptionId +
-      '\';export azureServicePrincipalTenantId=\'' + mockCredentials.environments.test.configuration.tenantId +
-      '\';export azureServicePrincipalClientId=\'' + mockCredentials.environments.test.configuration.clientId +
-      '\';export azureServicePrincipalPassword=\'' + mockCredentials.environments.test.configuration.password + '\''
+      mockCredentials.environments.test.provider['azure'].subscriptionId +
+      '\';export azureServicePrincipalTenantId=\'' + mockCredentials.environments.test.provider['azure'].tenantId +
+      '\';export azureServicePrincipalClientId=\'' + mockCredentials.environments.test.provider['azure'].clientId +
+      '\';export azureServicePrincipalPassword=\'' + mockCredentials.environments.test.provider['azure'].password + '\''
     )
     expect(successMessage.length).toBeGreaterThan(0)
     expect(errorMessage.length).toBeGreaterThan(0)
@@ -77,33 +77,51 @@ test('cloudConfigureCommand calls exec with credentials and handles all possible
 
   mockCommand = {
     executeCommand: mockExecuteCommand,
-    parameters: { shell: 'bash' }
+    parameters: { shell: 'bash' },
+    printMessage: mockPrintMessage
   }
 
-  cloudConfigureCommand.callback(['node', 'scriptname', 'something', 'test'], mockCredentials, mockCommand)
+  cloudConfigureCommand.callback([undefined, undefined, undefined, 'test', 'azure'], mockCredentials, mockCommand)
 })
 
-test('cloudConfigureCommand will default optional argument to dev if not provided', (done) => {
-  const mockCredentials = { environments: { dev: { provider: 'aws', configuration: { accessKeyId: 'test', secretAccessKey: 'notasecret' } } } }
-
-  const mockExecuteCommand = (commandString, successMessage, errorMessage) => {
-    expect(cloudConfigureCommand.environment).toEqual('dev')
-    done()
-  }
+test('cloudConfigureCommand will print usage if provider not specified in configuration', (done) => {
+  const mockCredentials = { environments: { test: { provider: { aws: { accessKeyId: 'test', secretAccessKey: 'notasecret' } } } } }
 
   mockCommand = {
-    executeCommand: mockExecuteCommand
+    executeCommand: undefined,
+    printMessage: (message) => {
+      expect(message).toEqual('Usage: ' + cloudConfigureCommand.usage)
+      done()
+    }
   }
 
-  cloudConfigureCommand.callback(['node', 'scriptname', 'something', undefined], mockCredentials, mockCommand)
+  cloudConfigureCommand.callback([undefined, undefined, undefined, 'test', undefined], mockCredentials, mockCommand)
 })
 
-test('cloudConfigureCommand will throw an error if provider not specified in configuration', () => {
-  const mockCredentials = { environments: { dev: { provider: undefined, configuration: { accessKeyId: 'test', secretAccessKey: 'notasecret' } } } }
+test('cloudConfigureCommand will print usage if environment is not specified in credentials', (done) => {
+  const mockCredentials = { environments: { } }
 
   mockCommand = {
-    executeCommand: undefined
+    executeCommand: undefined,
+    printMessage: (message) => {
+      expect(message).toEqual('The specified environment configuration does not exist')
+      done()
+    }
   }
 
-  expect(() => cloudConfigureCommand.callback(['node', 'scriptname', 'something', ''], mockCredentials, mockCommand)).toThrow()
+  cloudConfigureCommand.callback([undefined, undefined, undefined, 'test', 'test'], mockCredentials, mockCommand)
+})
+
+test('cloudConfigureCommand will print usage if provider is not specified in credentials', (done) => {
+  const mockCredentials = { environments: { test: { provider: { } } } }
+
+  mockCommand = {
+    executeCommand: undefined,
+    printMessage: (message) => {
+      expect(message).toEqual('The specified provider configuration does not exist')
+      done()
+    }
+  }
+
+  cloudConfigureCommand.callback([undefined, undefined, undefined, 'test', 'test'], mockCredentials, mockCommand)
 })

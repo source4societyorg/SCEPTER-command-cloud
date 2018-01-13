@@ -15,6 +15,6 @@ SCEPTER plugin command to configure cloud services
 
 # Commands
 
-`cloud:configure [<env>]`
+`cloud:configure <env> <provider>`
 
 This command will perform an `sls config credentials` command with provider, key and secret flags set to those defined in the SCEPTER config credentials file located in `config/credentials.json` of your project directory. See [Serverless Framework: Using AWS Credentials](https://serverless.com/framework/docs/providers/aws/guide/credentials#using-aws-profiles) for an example using AWS, although other provides are supported.
